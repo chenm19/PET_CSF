@@ -13,6 +13,7 @@ class ADTruth:
         self.L = Config.L
         self.t = np.linspace(0, 10 - 0.1, 100)
         self.y0 = Start.all
+        print("ODE size: {}".format(self.y0.shape))
         self.y = odeint(self.pend, self.y0, self.t)
         self.output = self.get_output()
         self.output_names = ["$A_{CSF}$", "$T_{CSF}$", "$T_{pCSF}$", "$A_{PET}$", "$T_{PET}$", "$N_{PET}$", ]
@@ -86,8 +87,10 @@ class ADTruth:
                 line_width=1
             )
         m.draw()
+        print("Save flag: {}. Figure is saved to {}".format(save_flag, save_path))
 
 
 if __name__ == "__main__":
     truth = ADTruth()
     truth.draw(save_flag=True, save_path="./figure/test.png")
+    # truth.draw()
