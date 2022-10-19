@@ -84,13 +84,15 @@ def one_time_deal_CSF(csf_path=None, dictionary_pickle_path=None):
             print("ptid key {} not found! Skip it!".format(ptid_key))
             continue
         label = ptid_dic[ptid_key]
-        counts[LABEL_ID[label]] += 1
-        for i in range(3):
-            collection[LABEL_ID[label]][i] += float(row[COLUMN_NAMES_CSF[i]])
+        if not (np.isnan(row[COLUMN_NAMES_CSF[0]]) or np.isnan(row[COLUMN_NAMES_CSF[1]]) or np.isnan(row[COLUMN_NAMES_CSF[2]])):
+            counts[LABEL_ID[label]] += 1
+            for i in range(3):
+                collection[LABEL_ID[label]][i] += float(row[COLUMN_NAMES_CSF[i]])
     for one_key in LABELS:
         if counts[LABEL_ID[one_key]] != 0:
             avg = collection[LABEL_ID[one_key], :] / counts[LABEL_ID[one_key]]
             np.save("data/CSF/CSF_{}".format(one_key), avg)
+            print(avg)
     print(counts)
 
 if __name__ == "__main__":

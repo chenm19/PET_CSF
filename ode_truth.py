@@ -10,21 +10,52 @@ from tqdm import tqdm
 from parameters import *
 from config import Start, Config
 from utils import MultiSubplotDraw
+from data_prepare_const import LABEL_LIST
 
 
 def get_now_string():
     return time.strftime("%Y%m%d_%H%M%S", time.localtime(time.time()))
 
 
-class ADTruth:
-    def __init__(self, class_name):
+class ConstTruth:
+    def __init__(self, **params):
+        assert "csf_folder_path" in params and "pet_folder_path" in params, "please provide the save folder paths"
+        csf_folder_path, pet_folder_path = params["csf_folder_path"], params["pet_folder_path"]
+        self.class_num = len(LABEL_LIST)
+        if "x" not in params:
+            self.x = [2 * item for item in range(self.class_num)]
+        else:
+            self.x = params.get("x")
+        self.y = {}
+        self.lines = ["APET", "TPET", "NPET", "ACSF", "TpCSF", "TCSF", "TtCSF"]
+        for one_line in self.lines:
+            self.y[one_line] = []
+        for i, class_name in enumerate(LABEL_LIST):
+            csf_data = np.load(os.path.join(csf_folder_path, "CSF_{}.npy".format(class_name)))
+            pet_data_a = np.load(os.path.join(pet_folder_path, "PET-A_{}.npy".format(class_name)))
+            pet_data_t = np.load(os.path.join(pet_folder_path, "PET-T_{}.npy".format(class_name)))
+            pet_data_n = np.load(os.path.join(pet_folder_path, "PET-N_{}.npy".format(class_name)))
+            self.y["APET"] = self.y["APET"] + [np.mean(pet_data_a)]
+            self.y["TPET"] = self.y["TPET"] + [np.mean(pet_data_t)]
+            self.y["NPET"] = self.y["NPET"] + [np.mean(pet_data_n)]
+
+            self.y["ACSF"] = self.y["ACSF"] + [csf_data[0]]
+            self.y["TtCSF"] = self.y["TtCSF"] + [csf_data[1]]
+            self.y["TpCSF"] = self.y["TpCSF"] + [csf_data[2]]
+            self.y["TCSF"] = self.y["TCSF"] + [csf_data[1] - csf_data[2]]
+
+
+class ADSolver:
+    def __init__(self, class_name, const_truth=None):
         self.n = Config.N_dim
         self.L = Config.L
         self.t = np.linspace(0, 10 - 0.1, 100)
         self.class_name = class_name
+        self.const_truth = const_truth
         self.y0 = Start(class_name).all
         # print("ODE size: {}".format(self.y0.shape))
         self.y = odeint(self.pend, self.y0, self.t)
+        self.lines = ["APET", "TPET", "NPET", "ACSF", "TpCSF", "TCSF", "TtCSF"]
         self.output = self.get_output()
         # print("output has {} curves".format(len(self.output)))
         self.output_names = ["$A_{PET}$", "$T_{PET}$", "$N_{PET}$", "$A_{CSF}$", "$T_{pCSF}$", "$T_{CSF}$", "$T_{tCSF}$"]
@@ -35,26 +66,29 @@ class ADTruth:
         Am = self.y[:, 0: self.n]
         Ao = self.y[:, self.n: self.n * 2]
         Af = self.y[:, self.n * 2: self.n * 3]
+        ACSF = self.y[:, self.n * 3: self.n * 3 + 1]
         Tm = self.y[:, self.n * 3 + 1: self.n * 4 + 1]
         Tp = self.y[:, self.n * 4 + 1: self.n * 5 + 1]
         To = self.y[:, self.n * 5 + 1: self.n * 6 + 1]
         Tf = self.y[:, self.n * 6 + 1: self.n * 7 + 1]
+        TCSF = self.y[:, self.n * 7 + 1: self.n * 7 + 2]
+        TpCSF = self.y[:, self.n * 7 + 2: self.n * 7 + 3]
         N = self.y[:, self.n * 7 + 3: self.n * 8 + 3]
 
-        ACSF = np.expand_dims(k_sA * np.sum(Am, axis=1), axis=0)
-        TCSF = np.expand_dims(k_sT * np.sum(Tm, axis=1), axis=0)
-        TpCSF = np.expand_dims(k_sTp * np.sum(Tp, axis=1), axis=0)
-        APET = np.swapaxes(Af, 0, 1)
-        TPET = np.swapaxes(Tf, 0, 1)
-        NPET = np.swapaxes(N, 0, 1)
+        ACSF = np.expand_dims(ACSF[:, 0], axis=0)  # np.expand_dims(k_sA * np.sum(Am, axis=1), axis=0)
+        TCSF = np.expand_dims(TCSF[:, 0], axis=0)  # np.expand_dims(k_sT * np.sum(Tm, axis=1), axis=0)
+        TpCSF = np.expand_dims(TpCSF[:, 0], axis=0)  # np.expand_dims(k_sTp * np.sum(Tp, axis=1), axis=0)
+        APET = np.expand_dims(np.mean(np.swapaxes(Af, 0, 1), axis=0), axis=0)
+        TPET = np.expand_dims(np.mean(np.swapaxes(Tf, 0, 1), axis=0), axis=0)
+        NPET = np.expand_dims(np.mean(np.swapaxes(N, 0, 1), axis=0), axis=0)
         TtCSF = TpCSF + TCSF
         Ao_sum = np.expand_dims(np.sum(Ao, axis=1), axis=0)
         To_sum = np.expand_dims(np.sum(To, axis=1), axis=0)
-        APET_average = np.expand_dims(np.mean(APET, axis=0), axis=0)
-        TPET_average = np.expand_dims(np.mean(TPET, axis=0), axis=0)
-        NPET_average = np.expand_dims(np.mean(NPET, axis=0), axis=0)
+        # APET_average = np.expand_dims(np.mean(APET, axis=0), axis=0)
+        # TPET_average = np.expand_dims(np.mean(TPET, axis=0), axis=0)
+        # NPET_average = np.expand_dims(np.mean(NPET, axis=0), axis=0)
         # return [APET, TPET, NPET, ACSF, TpCSF, TCSF, TtCSF, Ao_sum, To_sum]
-        return [APET_average, TPET_average, NPET_average, ACSF, TpCSF, TCSF, TtCSF, Ao_sum, To_sum]
+        return [APET, TPET, NPET, ACSF, TpCSF, TCSF, TtCSF, Ao_sum, To_sum]
 
     def pend(self, y, t):
         Am = y[0: self.n]
@@ -97,18 +131,26 @@ class ADTruth:
         save_path = os.path.join(folder_path, "{}.png".format(self.class_name))
         m = MultiSubplotDraw(row=3, col=3, fig_size=(24, 20), tight_layout_flag=True, show_flag=True, save_flag=save_flag,
                              save_path=save_path, save_dpi=400)
-        for name, data, color in zip(self.output_names, self.output[:len(self.output_names)], self.colors[:len(self.output_names)]):
-
-            m.add_subplot(
+        for name, data, color, line_string in zip(self.output_names, self.output[:len(self.output_names)], self.colors[:len(self.output_names)], self.lines):
+            # print(line_string, len(data))
+            # print(data)
+            ax = m.add_subplot(
                 y_lists=data,
                 x_list=self.t,
                 color_list=[color],
                 line_style_list=["solid"],
                 fig_title=name,
                 legend_list=[name],
-                line_width=2
+                line_width=2,
             )
+            if self.const_truth:
+                x = self.const_truth.x
+                y = self.const_truth.y[line_string]
+                # print(len(x), len(y))
+                ax.scatter(x=x, y=y, s=100, facecolor="red", alpha=0.5, marker="o", edgecolors='black', linewidths=1, zorder=10)
         # print(len(self.output[:len(self.output_names)]))
+        # for item in self.output[:len(self.output_names)]:
+        #     print("xx:", len(item), item.shape)
         # print(len(self.colors[:len(self.output_names)]))
         # print(len(["solid"] * len(self.output_names)))
         m.add_subplot(
@@ -118,7 +160,7 @@ class ADTruth:
             line_style_list=["solid"] * len(self.output_names),
             fig_title="Seven Curves in all",
             legend_list=self.output_names,
-            line_width=2
+            line_width=2,
         )
         m.add_subplot(
             y_lists=np.concatenate(self.output[-len(self.output_names_rest):], axis=0),
@@ -127,7 +169,7 @@ class ADTruth:
             line_style_list=["solid"] * len(self.output_names_rest),
             fig_title="Rest Curves in all",
             legend_list=self.output_names_rest,
-            line_width=2
+            line_width=2,
         )
         plt.suptitle("{} Class ODE Solution".format(self.class_name), fontsize=40)
         m.draw()
@@ -137,9 +179,14 @@ class ADTruth:
 def run():
     time_string = get_now_string()
     print("Time String (as folder name): {}".format(time_string))
-    for one_class_name in tqdm(["CN", "SMC", "EMCI", "LMCI", "AD"]):
-        truth = ADTruth(one_class_name)
-        truth.draw(time_string=time_string)
+
+    class_name = "CN"
+    ct = ConstTruth(
+        csf_folder_path="data/CSF/",
+        pet_folder_path="data/PET/"
+    )
+    truth = ADSolver(class_name, ct)
+    truth.draw(time_string=time_string)
 
 
 if __name__ == "__main__":
