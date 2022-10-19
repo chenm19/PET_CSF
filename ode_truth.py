@@ -59,7 +59,7 @@ class ADSolver:
         self.output = self.get_output()
         # print("output has {} curves".format(len(self.output)))
         self.output_names = ["$A_{PET}$", "$T_{PET}$", "$N_{PET}$", "$A_{CSF}$", "$T_{pCSF}$", "$T_{CSF}$", "$T_{tCSF}$"]
-        self.output_names_rest = ["$A_{o}Sum$", "$T_{o}Sum$"]
+        self.output_names_rest = ["$A_{m} Avg$", "$T_{m} Avg$", "$A_{o} Avg$", "$T_{o} Avg$", "$T_{p} Avg$"]
         self.colors = ["red", "green", "blue", "cyan", "orange", "purple", "brown", "gray", "olive"]
 
     def get_output(self):
@@ -82,13 +82,17 @@ class ADSolver:
         TPET = np.expand_dims(np.mean(np.swapaxes(Tf, 0, 1), axis=0), axis=0)
         NPET = np.expand_dims(np.mean(np.swapaxes(N, 0, 1), axis=0), axis=0)
         TtCSF = TpCSF + TCSF
-        Ao_sum = np.expand_dims(np.sum(Ao, axis=1), axis=0)
-        To_sum = np.expand_dims(np.sum(To, axis=1), axis=0)
+        Am_avg = np.expand_dims(np.mean(Am, axis=1), axis=0)
+        Tm_avg = np.expand_dims(np.mean(Tm, axis=1), axis=0)
+        Ao_avg = np.expand_dims(np.mean(Ao, axis=1), axis=0)
+        To_avg = np.expand_dims(np.mean(To, axis=1), axis=0)
+        Tp_avg = np.expand_dims(np.mean(Tp, axis=1), axis=0)
+
         # APET_average = np.expand_dims(np.mean(APET, axis=0), axis=0)
         # TPET_average = np.expand_dims(np.mean(TPET, axis=0), axis=0)
         # NPET_average = np.expand_dims(np.mean(NPET, axis=0), axis=0)
         # return [APET, TPET, NPET, ACSF, TpCSF, TCSF, TtCSF, Ao_sum, To_sum]
-        return [APET, TPET, NPET, ACSF, TpCSF, TCSF, TtCSF, Ao_sum, To_sum]
+        return [APET, TPET, NPET, ACSF, TpCSF, TCSF, TtCSF, Am_avg, Tm_avg, Ao_avg, To_avg, Tp_avg]
 
     def pend(self, y, t):
         Am = y[0: self.n]
@@ -129,7 +133,7 @@ class ADSolver:
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
         save_path = os.path.join(folder_path, "{}.png".format(self.class_name))
-        m = MultiSubplotDraw(row=3, col=3, fig_size=(24, 20), tight_layout_flag=True, show_flag=True, save_flag=save_flag,
+        m = MultiSubplotDraw(row=3, col=3, fig_size=(24, 18), tight_layout_flag=True, show_flag=True, save_flag=save_flag,
                              save_path=save_path, save_dpi=400)
         for name, data, color, line_string in zip(self.output_names, self.output[:len(self.output_names)], self.colors[:len(self.output_names)], self.lines):
             # print(line_string, len(data))
@@ -158,7 +162,7 @@ class ADSolver:
             x_list=self.t,
             color_list=self.colors[:len(self.output_names)],
             line_style_list=["solid"] * len(self.output_names),
-            fig_title="Seven Curves in all",
+            fig_title="Seven Target Curves",
             legend_list=self.output_names,
             line_width=2,
         )
@@ -167,11 +171,11 @@ class ADSolver:
             x_list=self.t,
             color_list=self.colors[:len(self.output_names_rest)],
             line_style_list=["solid"] * len(self.output_names_rest),
-            fig_title="Rest Curves in all",
+            fig_title="Rest Curves",
             legend_list=self.output_names_rest,
             line_width=2,
         )
-        plt.suptitle("{} Class ODE Solution".format(self.class_name), fontsize=40)
+        # plt.suptitle("{} Class ODE Solution".format(self.class_name), fontsize=40)
         m.draw()
         print("Save flag: {}. Figure is saved to {}".format(save_flag, save_path))
 
