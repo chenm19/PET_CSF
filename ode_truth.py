@@ -12,6 +12,19 @@ from config import Start, Config
 from utils import MultiSubplotDraw
 from data_prepare_const import LABEL_LIST
 
+"""
+# Chen asked me to add these comments here - if you need :) 
+CSF_CN counts=153.0 avg=[203.15882353  64.9379085   27.99281046]
+CSF_SMC counts=78.0 avg=[204.64102564  63.8974359   35.9025641 ]
+CSF_EMCI counts=41.0 avg=[190.7804878   79.9902439   34.88780488]
+CSF_LMCI counts=108.0 avg=[184.77314815  87.7         34.23425926]
+CSF_AD counts=307.0 avg=[144.74918567 119.13485342  47.93029316]
+CSF counts: [153.  78.  41. 108. 307.]
+PET-A counts: [81. 42. 88. 35. 19.]
+PET-T counts: [78. 42. 83. 30. 32.]
+PET-N counts: [92. 43. 80. 39. 11.]
+"""
+
 
 def get_now_string():
     return time.strftime("%Y%m%d_%H%M%S", time.localtime(time.time()))

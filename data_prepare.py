@@ -92,11 +92,12 @@ def one_time_deal_CSF(csf_path=None, dictionary_pickle_path=None):
         if counts[LABEL_ID[one_key]] != 0:
             avg = collection[LABEL_ID[one_key], :] / counts[LABEL_ID[one_key]]
             np.save("data/CSF/CSF_{}".format(one_key), avg)
-            print(avg)
-    print(counts)
+            print("CSF_{} counts={} avg={}".format(one_key, counts[LABEL_ID[one_key]], avg))
+    print("CSF counts:", counts)
 
 if __name__ == "__main__":
     # one_time_deal_PET()
     # d = one_time_build_ptid_dictionary()
     one_time_deal_CSF()
+    one_time_deal_PET()
     pass
