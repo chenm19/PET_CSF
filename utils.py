@@ -32,6 +32,7 @@ def draw_two_dimension(
     legend_ncol=3,
     legend_fontsize=15,
     fig_title=None,
+    legend_loc="best",
     fig_x_label="time",
     fig_y_label="val",
     show_flag=True,
@@ -104,9 +105,9 @@ def draw_two_dimension(
     plt.tick_params(labelsize=number_label_size)
     if legend_list:
         if legend_location == "fixed":
-            plt.legend(legend_list, fontsize=legend_fontsize, bbox_to_anchor=legend_bbox_to_anchor, fancybox=True, ncol=legend_ncol)
+            plt.legend(legend_list, fontsize=legend_fontsize, bbox_to_anchor=legend_bbox_to_anchor, fancybox=True, ncol=legend_ncol, loc=legend_loc)
         else:
-            plt.legend(legend_list, fontsize=legend_fontsize)
+            plt.legend(legend_list, fontsize=legend_fontsize, loc=legend_loc)
     if fig_title:
         plt.title(fig_title, fontsize=fig_title_size)
     if fig_grid:
@@ -290,7 +291,7 @@ def draw_multiple_loss(
 
 
 class MultiSubplotDraw:
-    def __init__(self, row, col, fig_size=(8, 6), show_flag=True, save_flag=False, save_path=None, save_dpi=300, tight_layout_flag=False):
+    def __init__(self, row, col, fig_size=(8, 6), show_flag=True, save_flag=False, save_path=None, save_dpi=300, title=None, title_size=20, tight_layout_flag=False):
         self.row = row
         self.col = col
         self.subplot_index = 0
@@ -300,6 +301,8 @@ class MultiSubplotDraw:
         self.save_dpi = save_dpi
         self.tight_layout_flag = tight_layout_flag
         self.fig = plt.figure(figsize=fig_size)
+        if title:
+            self.fig.suptitle(title, fontsize=title_size)
 
     def draw(self, ):
         if self.tight_layout_flag:
@@ -348,12 +351,15 @@ class MultiSubplotDraw:
         ax = self.fig.add_subplot(self.row, self.col, self.subplot_index)
         for i in range(y_count):
             draw_length = min(len(x_list), len(y_lists[i]))
-            ax.plot(x_list[:draw_length], y_lists[i][:draw_length], markersize=marker_size, linewidth=line_width, c=color_list[i], linestyle=line_style_list[i], label=legend_list[i])
+            # print("x_list[:draw_length]", x_list[:draw_length])
+            # print("y_lists[i][:draw_length]", y_lists[i][:draw_length])
+            # print("color_list[i]", color_list[i])
+            ax.plot(x_list[:draw_length], y_lists[i][:draw_length], markersize=marker_size, linewidth=line_width, c=color_list[i], linestyle=line_style_list[i], label=legend_list[i] if legend_list else None)
             if scatter_period > 0:
                 scatter_x = [x_list[:draw_length][idx] for idx in range(len(x_list[:draw_length])) if idx % scatter_period == 0]
                 scatter_y = [y_lists[i][:draw_length][idx] for idx in range(len(y_lists[i][:draw_length])) if idx % scatter_period == 0]
-                # print(scatter_x)
-                # print(scatter_y)
+                print(scatter_x)
+                print(scatter_y)
                 ax.scatter(x=scatter_x, y=scatter_y, s=scatter_marker_size, c=scatter_marker_color, marker=scatter_marker, linewidths=0, zorder=10)
         ax.set_xlabel(fig_x_label, fontsize=x_label_size)
         ax.set_ylabel(fig_y_label, fontsize=y_label_size)
