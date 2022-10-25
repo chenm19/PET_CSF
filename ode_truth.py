@@ -145,12 +145,11 @@ class ADSolver:
         folder_path = "figure/{}/".format(time_string)
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
-        save_path = os.path.join(folder_path, "{}.png".format(self.class_name))
+        save_path_target = os.path.join(folder_path, "target.png")
+        save_path_rest = os.path.join(folder_path, "rest.png")
         m = MultiSubplotDraw(row=3, col=3, fig_size=(24, 18), tight_layout_flag=True, show_flag=True, save_flag=save_flag,
-                             save_path=save_path, save_dpi=400)
+                             save_path=save_path_target, save_dpi=400)
         for name, data, color, line_string in zip(self.output_names, self.output[:len(self.output_names)], self.colors[:len(self.output_names)], self.lines):
-            # print(line_string, len(data))
-            # print(data)
             ax = m.add_subplot(
                 y_lists=data,
                 x_list=self.t,
@@ -164,12 +163,11 @@ class ADSolver:
                 x = self.const_truth.x
                 y = self.const_truth.y[line_string]
                 # print(len(x), len(y))
-                ax.scatter(x=x, y=y, s=100, facecolor="red", alpha=0.5, marker="o", edgecolors='black', linewidths=1, zorder=10)
-        # print(len(self.output[:len(self.output_names)]))
-        # for item in self.output[:len(self.output_names)]:
-        #     print("xx:", len(item), item.shape)
-        # print(len(self.colors[:len(self.output_names)]))
-        # print(len(["solid"] * len(self.output_names)))
+                ax2 = ax.twinx()
+                ax2.set_ylabel("truth points val", fontsize=15)
+                ax2.scatter(x=x, y=y, s=100, facecolor="red", alpha=0.5, marker="o", edgecolors='black', linewidths=1, zorder=10)
+                ax2.tick_params(axis='y', labelcolor="red", labelsize=15)
+
         m.add_subplot(
             y_lists=np.concatenate(self.output[:len(self.output_names)], axis=0),
             x_list=self.t,
@@ -179,6 +177,22 @@ class ADSolver:
             legend_list=self.output_names,
             line_width=2,
         )
+        m.draw()
+        print("Save flag: {}. Target figure is saved to {}".format(save_flag, save_path_target))
+
+        m = MultiSubplotDraw(row=2, col=3, fig_size=(24, 12), tight_layout_flag=True, show_flag=True,
+                             save_flag=save_flag,
+                             save_path=save_path_rest, save_dpi=400)
+        for name, data, color in zip(self.output_names_rest, self.output[-len(self.output_names_rest):], self.colors[:len(self.output_names_rest)]):
+            m.add_subplot(
+                y_lists=data,
+                x_list=self.t,
+                color_list=[color],
+                line_style_list=["solid"],
+                fig_title=name,
+                legend_list=[name],
+                line_width=2,
+            )
         m.add_subplot(
             y_lists=np.concatenate(self.output[-len(self.output_names_rest):], axis=0),
             x_list=self.t,
@@ -190,7 +204,7 @@ class ADSolver:
         )
         # plt.suptitle("{} Class ODE Solution".format(self.class_name), fontsize=40)
         m.draw()
-        print("Save flag: {}. Figure is saved to {}".format(save_flag, save_path))
+        print("Save flag: {}. Rest figure is saved to {}".format(save_flag, save_path_rest))
 
 
 def run():

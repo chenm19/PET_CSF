@@ -134,6 +134,7 @@ def one_time_deal_CSF(csf_path=None, dictionary_pickle_path=None):
             print("CSF_{} counts={} avg={}".format(one_key, counts[LABEL_ID[one_key]], avg))
     print("CSF counts:", counts)
 
+
 def percent_diff(base, data):
     diff = (data - base) / base
     diff_min = np.min(diff)
@@ -148,6 +149,7 @@ def percent_diff(base, data):
         diff_max * 100,
     )
     return diff_string
+
 
 def one_time_compare(data_name_1, data_name_2, legend_format_list, title, path_format="data/PET/{}_{}.npy"):
     label_list = LABEL_LIST
@@ -167,6 +169,7 @@ def one_time_compare(data_name_1, data_name_2, legend_format_list, title, path_f
         )
 
     m.draw()
+
 
 if __name__ == "__main__":
     # one_time_deal_PET()
