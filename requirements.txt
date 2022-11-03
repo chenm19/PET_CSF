@@ -3,3 +3,4 @@ matplotlib==3.5.1
 scipy
 tqdm
 pandas
+pymoo
