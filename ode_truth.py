@@ -44,7 +44,7 @@ class ConstTruth:
             self.x = [2 * item for item in range(self.class_num)]
         else:
             self.x = params.get("x")
-        self.y = {}
+        self.y = dict()
         self.lines = ["APET", "TPET", "NPET", "ACSF", "TpCSF", "TCSF", "TtCSF"]
         for one_line in self.lines:
             self.y[one_line] = []
@@ -53,6 +53,14 @@ class ConstTruth:
             pet_data_a = np.load(os.path.join(pet_folder_path, "PET-A_{}.npy".format(class_name)))
             pet_data_t = np.load(os.path.join(pet_folder_path, "PET-T_{}.npy".format(class_name)))
             pet_data_n = np.load(os.path.join(pet_folder_path, "PET-N_{}.npy".format(class_name)))
+            # if class_name == "CN":
+            #     print("truth APET:", np.mean(pet_data_a))
+            #     print("truth TPET:", np.mean(pet_data_t))
+            #     print("truth NPET:", np.mean(pet_data_n))
+            #     print("truth ACSF", csf_data[0])
+            #     print("truth TtCSF:", csf_data[1])
+            #     print("truth TpCSF:", csf_data[2])
+            #     print("truth TCSF:", csf_data[1] - csf_data[2])
             self.y["APET"] = self.y["APET"] + [np.mean(pet_data_a)]
             self.y["TPET"] = self.y["TPET"] + [np.mean(pet_data_t)]
             self.y["NPET"] = self.y["NPET"] + [np.mean(pet_data_n)]
@@ -116,6 +124,14 @@ class ADSolver:
         TPET = np.expand_dims(np.mean(np.swapaxes(Tf, 0, 1), axis=0), axis=0)
         NPET = np.expand_dims(np.mean(np.swapaxes(N, 0, 1), axis=0), axis=0)
         TtCSF = TpCSF + TCSF
+        # print("APET[0]:", APET[0][0])
+        # print("TPET[0]:", TPET[0][0])
+        # print("NPET[0]:", NPET[0][0])
+        # print("ACSF[0]:", ACSF[0][0])
+        # print("TCSF[0]:", TCSF[0][0])
+        # print("TpCSF[0]:", TpCSF[0][0])
+        # print("TtCSF[0]:", TtCSF[0][0])
+
         Am_avg = np.expand_dims(np.mean(Am, axis=1), axis=0)
         Tm_avg = np.expand_dims(np.mean(Tm, axis=1), axis=0)
         Ao_avg = np.expand_dims(np.mean(Ao, axis=1), axis=0)
@@ -342,13 +358,20 @@ def loss_func(params, ct):
         target_points = np.asarray(ct.y[one_target])
         t_fixed = np.asarray([0, 2, 4, 6, 8])
         index_fixed = (t_fixed / truth.T_unit).astype(int)
-        # print(truth.output[i].shape)
         predict_points = truth.output[i][0][index_fixed]
         # print("target_points:", target_points.shape)
         # print("predict_points:", predict_points.shape)
-        record[i] = np.mean(((predict_points - target_points) / target_points) ** 2)
-    return record
 
+        target_points_scaled = (target_points - np.min(target_points)) / (np.max(target_points) - np.min(target_points))
+        predict_points_scaled = (predict_points - np.min(predict_points)) / (np.max(predict_points) - np.min(predict_points))
+
+        # record[i] = np.mean(((predict_points - target_points) / target_points) ** 2)
+        record[i] = np.mean((predict_points_scaled - target_points_scaled) ** 2)
+
+    return record[[0, 1, 3, 4, 5, 6]]  # remove NPET here
+
+
+# MyTime is only for debugging
 class MyTime:
     def __init__(self):
         self.count = 0
@@ -370,6 +393,7 @@ class MyTime:
 
     def print(self):
         print("count = {}; total time = {} s; avg time = {} s".format(self.count, self.sum, self.sum / self.count))
+
 
 def run(params=None):
     time_string = get_now_string()
@@ -396,9 +420,15 @@ if __name__ == "__main__":
     # print("hhhh")
     # params = np.load("saves/params_20221102_050650.npy")
     # params = np.asarray([PARAMS[i]["init"] for i in range(PARAM_NUM)])
-    p = np.load("saves/params_20221102_214224.npy")
-    record2 = loss_func(p, ct)
-    print(record2)
-    # mt = MyTime()
-    run(p)
-    # mt.print()
+    p0 = np.asarray([PARAMS[i]["init"] for i in range(PARAM_NUM)])
+    record1 = loss_func(p0, ct)
+    print(record1)
+    run(p0)
+
+
+    # p = np.load("saves/params_20221103_090002.npy")
+    # record2 = loss_func(p, ct)
+    # print(record2)
+    # # mt = MyTime()
+    # run(p)
+    # # mt.print()
