@@ -50,13 +50,13 @@ class MyProblem(ElementwiseProblem):
 def run():
     time_string_start = get_now_string()
     t0 = time.time()
-    print("Start at {}".format(time_string_start))
+    print("[run - multi_obj] Start at {}".format(time_string_start))
     problem = MyProblem()
 
     initial_x = np.asarray([PARAMS[i]["init"] for i in range(PARAM_NUM)]) # default
 
     algorithm = NSGA2(
-        pop_size=5,  # [highlight] population size
+        pop_size=1,  # [highlight] population size
         n_offsprings=2,
         sampling=FloatRandomSampling(),  # sampling=initial_x
         crossover=SBX(prob=0.9, eta=15),
@@ -73,21 +73,22 @@ def run():
                    verbose=True)
     X = res.X
     F = res.F
-    print("X:", X)
-    print("F:", F)
-    approx_min = F.min(axis=0)
-    approx_max = F.max(axis=0)
-    print("(before normalization) min:", approx_min)
-    print("(before normalization) max:", approx_max)
-    # print(approx_max - approx_min)
-    nF = (F - approx_min) / (approx_max - approx_min) if len(F) > 1 else F
+    print("[run - multi_obj] X:", X)
+    print("[run - multi_obj] F:", F)
 
-    print("(after normalization) min:", nF.min(axis=0))
-    print("(after normalization) max:", nF.max(axis=0))
-    if np.ndim(nF) == 1:
+    if np.ndim(F) == 1:
         best_x = X
         best_f = F
     else:
+        approx_min = F.min(axis=0)
+        approx_max = F.max(axis=0)
+        print("[run - multi_obj] (before normalization) min:", approx_min)
+        print("[run - multi_obj] (before normalization) max:", approx_max)
+        # print(approx_max - approx_min)
+        nF = (F - approx_min) / (approx_max - approx_min) if len(F) > 1 else F
+
+        print("[run - multi_obj] (after normalization) min:", nF.min(axis=0))
+        print("[run - multi_obj] (after normalization) max:", nF.max(axis=0))
         average_n = 1
         weights = np.array([1.0 / average_n] * average_n)
         decomp = ASF()
@@ -103,20 +104,20 @@ def run():
         os.makedirs(folder_path)
     save_path_params_x = os.path.join(folder_path, "params_{}.npy".format(time_string_start))
     save_path_params_f = os.path.join(folder_path, "val_{}.npy".format(time_string_start))
-    print("Params shape: ", best_x.shape)
+    print("[run - multi_obj] Params shape: ", best_x.shape)
     print(best_x)
-    print("Val shape: ", best_f.shape)
+    print("[run - multi_obj] Val shape: ", best_f.shape)
     print(best_f)
     np.save(save_path_params_x, best_x)
     np.save(save_path_params_f, best_f)
-    print("The optimal params are saved as {} and the optimal value is saved as {}.".format(save_path_params_x, save_path_params_f))
+    print("[run - multi_obj] The optimal params are saved as {} and the optimal value is saved as {}.".format(save_path_params_x, save_path_params_f))
     t1 = time.time()
     time_string_end = get_now_string()
-    print("End at {0} ({1:.2f} min)".format(time_string_end, (t1 - t0) / 60.0))
+    print("[run - multi_obj] End at {0} ({1:.2f} min)".format(time_string_end, (t1 - t0) / 60.0))
 
     original_params = np.asarray([PARAMS[i]["init"] for i in range(PARAM_NUM)])
     original_loss = np.sum(loss_func(original_params, problem.ct))
-    print("Note that using the initial params the loss value would be {}".format(original_loss))
+    print("[run - multi_obj] Note that using the initial params the loss value would be {}".format(original_loss))
 
     # plt.figure(figsize=(7, 5))
     # plt.scatter(F[:, 0], F[:, 1], s=30, facecolors='none', edgecolors='blue')

@@ -358,17 +358,29 @@ def loss_func(params, ct):
         target_points = np.asarray(ct.y[one_target])
         t_fixed = np.asarray([0, 2, 4, 6, 8])
         index_fixed = (t_fixed / truth.T_unit).astype(int)
-        predict_points = truth.output[i][0][index_fixed]
+        predict_points = np.asarray(truth.output[i][0][index_fixed])
         # print("target_points:", target_points.shape)
         # print("predict_points:", predict_points.shape)
 
         target_points_scaled = (target_points - np.min(target_points)) / (np.max(target_points) - np.min(target_points))
-        predict_points_scaled = (predict_points - np.min(predict_points)) / (np.max(predict_points) - np.min(predict_points))
+        print("[loss_func] ({}) predict_points: {}".format(one_target, predict_points))
+
+        if np.max(predict_points) - np.min(predict_points) <= 1e-15:
+            predict_points_scaled = np.zeros(len(target_points_scaled))
+        else:
+            predict_points_scaled = (predict_points - np.min(predict_points)) / (np.max(predict_points) - np.min(predict_points))
+        # try:
+        #     # assert 0.0 not in list(np.max(predict_points) - np.min(predict_points))
+        #     print(predict_points - np.min(predict_points), np.max(predict_points) - np.min(predict_points))
+        #     predict_points_scaled = (predict_points - np.min(predict_points)) / (np.max(predict_points) - np.min(predict_points))
+        # except Exception as e:
+        #     print(e)
+        #     predict_points_scaled = np.zeros(len(target_points_scaled))
 
         # record[i] = np.mean(((predict_points - target_points) / target_points) ** 2)
         record[i] = np.mean((predict_points_scaled - target_points_scaled) ** 2)
-
-    return record[[0, 1, 3, 4, 5, 6]]  # remove NPET here
+    record = record[[0, 1, 3, 4, 5, 6]]
+    return record  # remove NPET here
 
 
 # MyTime is only for debugging
